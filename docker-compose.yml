@@ -3,10 +3,13 @@ version: '3.8'
 services:
   background-removal-api:
     build: .
+    runtime: nvidia  # 指定使用NVIDIA运行时
     ports:
       - "6001:6001"
     environment:
       - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all  # 让容器可以访问所有GPU
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility  # 启用计算和工具能力
     volumes:
       - ./models:/app/models  # 可选：用于缓存模型文件
     restart: unless-stopped
@@ -16,10 +19,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              device_ids: ['0']  # 指定物理机上的 1 号卡
-              capabilities: [gpu]
