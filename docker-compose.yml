@@ -1,24 +1,27 @@
 version: '3.8'
 
 services:
-  background-removal-api:
-    build: .
-    runtime: nvidia  # 指定使用NVIDIA运行时
+  pytorch-app:
+    image: pytorch/pytorch:2.5.1-cuda12.4-cudnn9-devel
+    container_name: pytorch-service
+    working_dir: /app
+    volumes:
+      - ./:/app
     ports:
       - "6001:6001"
-    volumes:
-      - ./models:/app/models  # 可选：用于缓存模型文件
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['0']  # 指定物理机上的1号GPU卡
+              device_ids: ['0']  # 指定物理机上的 0 号卡
               capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=0
+    command: >
+      bash -c "
+      pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple &&
+      pip install -r requirements.txt &&
+      uvicorn server:app --host 0.0.0.0 --port 6001
+      "
+    restart: unless-stopped
